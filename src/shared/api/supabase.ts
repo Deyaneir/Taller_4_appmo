@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { ENV } from "@shared/config/env";
 import "react-native-url-polyfill/auto";
 
+
 export const supabase = createClient(ENV.supabaseUrl, ENV.supabaseAnonKey, {
     auth: {
         // Configuración de autenticación para React Native

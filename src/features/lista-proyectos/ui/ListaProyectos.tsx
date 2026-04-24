@@ -56,7 +56,12 @@ export function ListaProyectos() {
     <FlatList
       data={proyectos}
       keyExtractor={(p) => p.id}
-      renderItem={({ item }) => <ProyectoCard proyecto={item} />}
+      renderItem={({ item }) => (
+        <ProyectoCard
+          proyecto={item}
+          onEliminado={() => cargarProyectos(true)}
+        />
+      )}
       contentContainerStyle={styles.lista}
     />
   );

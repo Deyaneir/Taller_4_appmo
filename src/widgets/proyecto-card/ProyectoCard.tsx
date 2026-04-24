@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import type { ProyectoTesis } from '@entities/proyecto-tesis/model/types';
+import { useEliminarProyecto } from '@features/eliminar-proyecto/useEliminarProyecto';
+import React from 'react';
+import { ActivityIndicator, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
  
 const BADGE_COLOR: Record<string, string> = {
   'En Progreso': '#3498DB',
@@ -10,9 +11,12 @@ const BADGE_COLOR: Record<string, string> = {
  
 interface Props {
   proyecto: ProyectoTesis;
+  onEliminado: () => void;
 }
  
-export function ProyectoCard({ proyecto }: Props) {
+export function ProyectoCard({ proyecto, onEliminado }: Props) {
+  const { onEliminar, isLoading } = useEliminarProyecto(proyecto.id, onEliminado);
+
   const abrirRepo = () => {
     if (proyecto.repositorio_github)
       Linking.openURL(proyecto.repositorio_github);
@@ -60,6 +64,18 @@ export function ProyectoCard({ proyecto }: Props) {
           <Text style={styles.repoTexto}>Ver en GitHub →</Text>
         </TouchableOpacity>
       )}
+
+      <TouchableOpacity
+        style={[styles.eliminarBoton, isLoading && styles.eliminarBotonDeshabilitado]}
+        onPress={onEliminar}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.eliminarTexto}>Eliminar</Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -88,4 +104,20 @@ const styles = StyleSheet.create({
   repoBoton: { marginTop: 12, paddingVertical: 8, paddingHorizontal: 12,
     backgroundColor: '#EBF5FB', borderRadius: 8, alignSelf: 'flex-start' },
   repoTexto: { color: '#2E6DA4', fontSize: 13, fontWeight: '600' },
+  eliminarBoton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#E74C3C',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  eliminarBotonDeshabilitado: {
+    opacity: 0.7,
+  },
+  eliminarTexto: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });

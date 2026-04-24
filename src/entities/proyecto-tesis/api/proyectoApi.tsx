@@ -1,5 +1,5 @@
 import { supabase } from "@shared/api/supabase";
-import type { CreateProyectoDto, ProyectoTesis } from "../model/types";
+import type { CreateProyectoDto, ProyectoTesis, UpdateProyectoDto } from "../model/types";
 
 const TABLE = "proyectos_tesis";
 
@@ -28,6 +28,79 @@ export const proyectoApi = {
 
     if (error) throw new Error(error.message);
     return data;
+  },
+
+  /** Elimina un proyecto por su ID */
+  async delete(id: string): Promise<void> {
+    const recordId = String(id ?? '').trim();
+
+    console.log('[proyectoApi.delete] id:', recordId, 'type:', typeof recordId);
+
+    if (!recordId) {
+      throw new Error('ID inválido para eliminar el proyecto.');
+    }
+
+    const { error } = await supabase
+      .from(TABLE)
+      .delete()
+      .eq('id', recordId);
+
+    if (error) {
+      console.error('[proyectoApi.delete]', error.message);
+      throw new Error(error.message);
+    }
+  },
+
+  /** Cambiado: actualiza un proyecto por su ID para la edición */
+  async update(id: string, datos: UpdateProyectoDto): Promise<ProyectoTesis> {
+    const recordId = String(id ?? '').trim();
+
+    // Cambiado: el payload se arma de forma explícita y se filtran undefined
+    // antes de enviarlo a Supabase.
+    const payload = Object.fromEntries(
+      Object.entries({
+        titulo: datos.titulo,
+        descripcion: datos.descripcion,
+        autores: datos.autores,
+        tutor_docente: datos.tutor_docente,
+        tecnologias_utilizadas: datos.tecnologias_utilizadas,
+        fecha_inicio: datos.fecha_inicio,
+        fecha_fin: datos.fecha_fin?.trim() ? datos.fecha_fin : undefined,
+        repositorio_github: datos.repositorio_github?.trim() ? datos.repositorio_github : undefined,
+        estado: datos.estado,
+      }).filter(([, value]) => value !== undefined)
+    ) as UpdateProyectoDto;
+
+    // Cambiado: logs para confirmar que el id y el payload no llegan vacíos.
+    console.log("[proyectoApi.update] id:", recordId, "type:", typeof recordId);
+    console.log("[proyectoApi.update] payload:", payload);
+
+    if (!recordId) {
+      throw new Error("ID inválido para actualizar el proyecto.");
+    }
+
+    // La app ya trabaja con proyectos_tesis en getAll/getById/search; aquí mantenemos la
+    // misma tabla y pedimos la fila actualizada con select() para confirmar la ejecución.
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update(payload)
+      .eq("id", recordId)
+      .select();
+
+    console.log("[proyectoApi.update] response:", data);
+
+    if (error) {
+      console.error("[proyectoApi.update]", error.message);
+      throw new Error(error.message);
+    }
+
+    const updated = data?.[0];
+
+    if (!updated) {
+      throw new Error("No se pudo actualizar el proyecto.");
+    }
+
+    return updated;
   },
 
   /** Crea un nuevo proyecto de tesis */

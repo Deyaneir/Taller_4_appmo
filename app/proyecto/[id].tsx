@@ -1,5 +1,7 @@
 import { proyectoApi } from '@entities/proyecto-tesis/api/proyectoApi';
 import type { ProyectoTesis } from '@entities/proyecto-tesis/model/types';
+import { useEliminarProyecto } from '@features/eliminar-proyecto/useEliminarProyecto';
+import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -11,47 +13,51 @@ function normalizeId(id: string | string[] | undefined): string {
 export default function ProyectoDetalleScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const router = useRouter();
+  const isFocused = useIsFocused();
   const id = normalizeId(params.id);
+  const { onEliminar, isLoading: eliminando } = useEliminarProyecto(id, () => {
+    // Cambiado: al eliminar se regresa a la lista para mostrar el refresh.
+    router.back();
+  });
 
   const [proyecto, setProyecto] = useState<ProyectoTesis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    // Cambiado: recarga el proyecto cada vez que la pantalla vuelve a tener foco.
+    if (!id) {
+      setError('ID de proyecto inválido.');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    let cancelled = false;
 
     const cargarProyecto = async () => {
-      if (!id) {
-        if (isMounted) {
-          setError('ID de proyecto inválido.');
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
       try {
         const data = await proyectoApi.getById(id);
-        if (isMounted) setProyecto(data);
+        if (!cancelled) setProyecto(data);
       } catch (e) {
-        if (isMounted) {
+        if (!cancelled) {
           const message = e instanceof Error ? e.message : 'Error desconocido';
           setError(message);
           setProyecto(null);
         }
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
-    cargarProyecto();
+    void cargarProyecto();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [id]);
+  }, [id, isFocused]);
 
   if (isLoading) {
     return (
@@ -82,6 +88,28 @@ export default function ProyectoDetalleScreen() {
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.backText}>← Volver</Text>
       </TouchableOpacity>
+
+      <View style={styles.actionsRow}>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => router.push(`/proyecto/${id}/edit`)}
+        >
+          {/* Cambiado: botón para abrir la edición del proyecto. */}
+          <Text style={styles.editText}>Editar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.deleteButton, eliminando && styles.deleteButtonDisabled]}
+          onPress={onEliminar}
+          disabled={eliminando}
+        >
+          {eliminando ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.deleteText}>Eliminar</Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.title}>{proyecto.titulo}</Text>
@@ -141,6 +169,36 @@ const styles = StyleSheet.create({
   },
   backText: {
     color: '#2E6DA4',
+    fontWeight: '700',
+  },
+  editButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#1A3A5C',
+  },
+  editText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  deleteButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#E74C3C',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  deleteButtonDisabled: {
+    opacity: 0.7,
+  },
+  deleteText: {
+    color: '#fff',
     fontWeight: '700',
   },
   center: {

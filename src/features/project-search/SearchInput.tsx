@@ -5,11 +5,12 @@ import { useProjectSearch } from './useProjectSearch';
 
 interface Props {
   onResults: (proyectos: ProyectoTesis[]) => void;
+  refreshToken?: number;
 }
 
-export function SearchInput({ onResults }: Props) {
+export function SearchInput({ onResults, refreshToken = 0 }: Props) {
   const [query, setQuery] = useState('');
-  const { proyectos, isLoading, error } = useProjectSearch(query);
+  const { proyectos, isLoading, error } = useProjectSearch(query, refreshToken);
 
   useEffect(() => {
     onResults(proyectos);

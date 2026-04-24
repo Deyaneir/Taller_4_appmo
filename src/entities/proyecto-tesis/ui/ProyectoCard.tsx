@@ -11,9 +11,10 @@ const BADGE_COLOR: Record<string, string> = {
 interface Props {
   proyecto: ProyectoTesis;
   onPress?: () => void;
+  onEliminado?: () => void;
 }
  
-export function ProyectoCard({ proyecto, onPress }: Props) {
+export function ProyectoCard({ proyecto, onPress, onEliminado }: Props) {
   const abrirRepo = () => {
     if (proyecto.repositorio_github)
       Linking.openURL(proyecto.repositorio_github);
@@ -58,6 +59,8 @@ export function ProyectoCard({ proyecto, onPress }: Props) {
           <Text style={styles.repoTexto}>Ver en GitHub -&gt;</Text>
         </TouchableOpacity>
       )}
+
+      {onEliminado ? null : null}
     </Pressable>
   );
 }

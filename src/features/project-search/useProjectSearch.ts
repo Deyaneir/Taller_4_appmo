@@ -8,7 +8,7 @@ interface UseProjectSearchResult {
   error: string | null;
 }
 
-export function useProjectSearch(query: string): UseProjectSearchResult {
+export function useProjectSearch(query: string, refreshToken = 0): UseProjectSearchResult {
   const [proyectos, setProyectos] = useState<ProyectoTesis[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export function useProjectSearch(query: string): UseProjectSearchResult {
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, refreshToken]);
 
   return { proyectos, isLoading, error };
 }

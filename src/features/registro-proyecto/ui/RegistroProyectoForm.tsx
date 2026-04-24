@@ -1,18 +1,21 @@
-import type { CreateProyectoDto, EstadoProyecto } from '@entities/proyecto-tesis/model/types';
-import React, { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { proyectoSchema, type ProyectoFormValues } from '@shared/lib/validators/proyectoSchema';
+import React from 'react';
+import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import {
     ActivityIndicator,
     Alert,
     Platform,
     ScrollView,
     StyleSheet,
-    Text, TextInput, TouchableOpacity,
+    Text,
+    TextInput,
+    TouchableOpacity,
     View,
 } from 'react-native';
-import { createProyecto, validateProyecto } from '../api/createProyecto';
- 
-// Valor inicial del formulario
-const FORM_INICIAL: CreateProyectoDto = {
+import { createProyecto } from '../api/createProyecto';
+
+const FORM_INICIAL: ProyectoFormValues = {
   titulo: '',
   descripcion: '',
   autores: '',
@@ -23,93 +26,82 @@ const FORM_INICIAL: CreateProyectoDto = {
   repositorio_github: '',
   estado: 'En Progreso',
 };
- 
-const ESTADOS: EstadoProyecto[] = ['En Progreso', 'Completado', 'Suspendido'];
- 
+
+const ESTADOS: ProyectoFormValues['estado'][] = ['En Progreso', 'Completado', 'Suspendido'];
+
 interface Props {
   onSuccess?: () => void;
 }
 
 interface CampoProps {
+  control: Control<ProyectoFormValues>;
+  name: FieldPath<ProyectoFormValues>;
   label: string;
-  campo: keyof CreateProyectoDto;
   placeholder: string;
-  form: CreateProyectoDto;
-  errores: Record<string, string>;
-  actualizar: (campo: keyof CreateProyectoDto, valor: string) => void;
   multiline?: boolean;
   keyboardType?: 'default' | 'url';
 }
 
-function Campo({
-  label,
-  campo,
-  placeholder,
-  form,
-  errores,
-  actualizar,
-  multiline = false,
-  keyboardType = 'default',
-}: CampoProps) {
+function Campo({ control, name, label, placeholder, multiline = false, keyboardType = 'default' }: CampoProps) {
   return (
-    <View style={styles.campoContenedor}>
-      <Text style={styles.etiqueta}>{label}</Text>
-      <TextInput
-        style={[
-          styles.input,
-          multiline && styles.inputMultiline,
-          errores[campo] ? styles.inputError : null,
-        ]}
-        placeholder={placeholder}
-        placeholderTextColor="#999"
-        value={form[campo] as string}
-        onChangeText={val => actualizar(campo, val)}
-        multiline={multiline}
-        numberOfLines={multiline ? 3 : 1}
-        keyboardType={keyboardType}
-        autoCapitalize={campo === 'repositorio_github' ? 'none' : 'sentences'}
-      />
-      {errores[campo] ? (
-        <Text style={styles.textoError}>{errores[campo]}</Text>
-      ) : null}
-    </View>
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState }) => (
+        <View style={styles.campoContenedor}>
+          <Text style={styles.etiqueta}>{label}</Text>
+          <TextInput
+            style={[
+              styles.input,
+              multiline && styles.inputMultiline,
+              fieldState.error ? styles.inputError : null,
+            ]}
+            placeholder={placeholder}
+            placeholderTextColor="#999"
+            value={(field.value ?? '') as string}
+            onChangeText={field.onChange}
+            onBlur={field.onBlur}
+            multiline={multiline}
+            numberOfLines={multiline ? 3 : 1}
+            keyboardType={keyboardType}
+            autoCapitalize={name === 'repositorio_github' ? 'none' : 'sentences'}
+          />
+          {fieldState.error ? <Text style={styles.textoError}>{fieldState.error.message}</Text> : null}
+        </View>
+      )}
+    />
   );
 }
- 
+
 export function RegistroProyectoForm({ onSuccess }: Props) {
-  const [form, setForm] = useState<CreateProyectoDto>(FORM_INICIAL);
-  const [errores, setErrores] = useState<Record<string, string>>({});
-  const [cargando, setCargando] = useState(false);
- 
-  const actualizar = (campo: keyof CreateProyectoDto, valor: string) => {
-    setForm(prev => ({ ...prev, [campo]: valor }));
-    // Limpiar error del campo al escribir
-    if (errores[campo]) setErrores(prev => ({ ...prev, [campo]: '' }));
-  };
- 
-  const handleGuardar = async () => {
-    const validacion = validateProyecto(form);
-    if (validacion.length > 0) {
-      const mapa: Record<string, string> = {};
-      validacion.forEach(e => { mapa[e.field] = e.message; });
-      setErrores(mapa);
-      Alert.alert('Formulario incompleto', 'Revisa los campos marcados en rojo.');
-      return;
-    }
- 
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting, isValid },
+  } = useForm<ProyectoFormValues>({
+    resolver: zodResolver(proyectoSchema),
+    mode: 'onChange',
+    defaultValues: FORM_INICIAL,
+  });
+
+  const handleGuardar = handleSubmit(async (values) => {
     try {
-      setCargando(true);
-      await createProyecto(form);
+      await createProyecto(values);
       Alert.alert('¡Éxito!', 'Proyecto de tesis registrado correctamente.', [
-        { text: 'OK', onPress: () => { setForm(FORM_INICIAL); onSuccess?.(); } }
+        {
+          text: 'OK',
+          onPress: () => {
+            reset(FORM_INICIAL);
+            onSuccess?.();
+          },
+        },
       ]);
     } catch {
       Alert.alert('Error', 'No se pudo guardar el proyecto. Verifica tu conexión.');
-    } finally {
-      setCargando(false);
     }
-  };
- 
+  });
+
   return (
     <ScrollView
       style={styles.contenedor}
@@ -118,114 +110,106 @@ export function RegistroProyectoForm({ onSuccess }: Props) {
     >
       <Text style={styles.titulo}>Nuevo Proyecto de Tesis</Text>
       <Text style={styles.subtitulo}>ESFOT — Tecnología Superior en Desarrollo de Software</Text>
- 
+
       <Campo
+        control={control}
+        name="titulo"
         label="Título del Proyecto *"
-        campo="titulo"
         placeholder="Ej: Sistema de gestión de inventarios para PYMES"
-        form={form}
-        errores={errores}
-        actualizar={actualizar}
       />
       <Campo
-        label="Descripción"
-        campo="descripcion"
+        control={control}
+        name="descripcion"
+        label="Descripción *"
         placeholder="Describe brevemente el objetivo del proyecto..."
-        form={form}
-        errores={errores}
-        actualizar={actualizar}
         multiline
       />
       <Campo
+        control={control}
+        name="autores"
         label="Autores * (separa con comas)"
-        campo="autores"
         placeholder="Ej: Ana Torres, Luis Pérez"
-        form={form}
-        errores={errores}
-        actualizar={actualizar}
       />
       <Campo
+        control={control}
+        name="tutor_docente"
         label="Tutor Docente *"
-        campo="tutor_docente"
         placeholder="Ej: Ing. Juan Carlos Gonzalez Msc."
-        form={form}
-        errores={errores}
-        actualizar={actualizar}
       />
       <Campo
+        control={control}
+        name="tecnologias_utilizadas"
         label="Tecnologías Utilizadas * (separa con comas)"
-        campo="tecnologias_utilizadas"
         placeholder="Ej: React Native, Node.js, PostgreSQL, AWS"
-        form={form}
-        errores={errores}
-        actualizar={actualizar}
       />
       <Campo
+        control={control}
+        name="fecha_inicio"
         label="Fecha de Inicio * (AAAA-MM-DD)"
-        campo="fecha_inicio"
         placeholder="Ej: 2025-03-01"
-        form={form}
-        errores={errores}
-        actualizar={actualizar}
       />
       <Campo
+        control={control}
+        name="fecha_fin"
         label="Fecha de Fin (AAAA-MM-DD)"
-        campo="fecha_fin"
         placeholder="Ej: 2025-12-31 (dejar vacío si está en progreso)"
-        form={form}
-        errores={errores}
-        actualizar={actualizar}
       />
       <Campo
+        control={control}
+        name="repositorio_github"
         label="Repositorio GitHub"
-        campo="repositorio_github"
         placeholder="https://github.com/usuario/repositorio"
-        form={form}
-        errores={errores}
-        actualizar={actualizar}
         keyboardType="url"
       />
- 
-      {/* Selector de Estado */}
+
       <View style={styles.campoContenedor}>
         <Text style={styles.etiqueta}>Estado del Proyecto</Text>
-        <View style={styles.estadoContenedor}>
-          {ESTADOS.map(est => (
-            <TouchableOpacity
-              key={est}
-              style={[
-                styles.estadoBoton,
-                form.estado === est && styles.estadoBotonActivo,
-              ]}
-              onPress={() => actualizar('estado', est)}
-            >
-              <Text style={[
-                styles.estadoTexto,
-                form.estado === est && styles.estadoTextoActivo,
-              ]}>{est}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Controller
+          control={control}
+          name="estado"
+          render={({ field, fieldState }) => (
+            <View>
+              <View style={styles.estadoContenedor}>
+                {ESTADOS.map((estado) => (
+                  <TouchableOpacity
+                    key={estado}
+                    style={[
+                      styles.estadoBoton,
+                      field.value === estado && styles.estadoBotonActivo,
+                    ]}
+                    onPress={() => field.onChange(estado)}
+                  >
+                    <Text
+                      style={[
+                        styles.estadoTexto,
+                        field.value === estado && styles.estadoTextoActivo,
+                      ]}
+                    >
+                      {estado}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {fieldState.error ? <Text style={styles.textoError}>{fieldState.error.message}</Text> : null}
+            </View>
+          )}
+        />
       </View>
- 
+
       <TouchableOpacity
-        style={[styles.botonGuardar, cargando && styles.botonDeshabilitado]}
+        style={[styles.botonGuardar, (!isValid || isSubmitting) && styles.botonDeshabilitado]}
         onPress={handleGuardar}
-        disabled={cargando}
+        disabled={!isValid || isSubmitting}
       >
-        {cargando
-          ? <ActivityIndicator color="#fff" />
-          : <Text style={styles.botonTexto}>Registrar Proyecto</Text>
-        }
+        {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.botonTexto}>Registrar Proyecto</Text>}
       </TouchableOpacity>
     </ScrollView>
   );
 }
- 
-// ── ESTILOS ──────────────────────────────────────────────────
+
 const AZUL = '#1A3A5C';
 const AZUL_CLARO = '#2E6DA4';
- 
+
 const styles = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#F5F7FA' },
   scroll: { padding: 20, paddingBottom: 40 },
