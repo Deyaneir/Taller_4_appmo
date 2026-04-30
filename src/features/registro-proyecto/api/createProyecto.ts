@@ -1,6 +1,7 @@
 // src/features/registro-proyecto/api/createProyecto.ts
 import { proyectoApi } from "@entities/proyecto-tesis/api/proyectoApi";
 import type { CreateProyectoDto } from "@entities/proyecto-tesis/model/types";
+import { uploadDocumentoProyecto } from "./uploadDocumento";
 
 export interface ValidationError {
   field: keyof CreateProyectoDto;
@@ -49,7 +50,43 @@ export function validateProyecto(
   return errors;
 }
 
-/** Crea el proyecto tras validar */
-export async function createProyecto(dto: CreateProyectoDto) {
-  return proyectoApi.create(dto);
+/** Crea el proyecto tras validar y subir documento si existe */
+export async function createProyecto(
+  dto: CreateProyectoDto,
+  documentoFile?: {
+    name: string;
+    type: string;
+    size: number;
+    uri: string;
+  }
+) {
+  try {
+    let documentoUrl: string | undefined;
+
+    // Si hay documento, subirlo primero
+    if (documentoFile) {
+      try {
+        const uploadResult = await uploadDocumentoProyecto(documentoFile);
+        documentoUrl = uploadResult.url;
+      } catch (uploadError) {
+        console.error('[createProyecto] Error al subir documento:', uploadError);
+        throw new Error(
+          uploadError instanceof Error
+            ? uploadError.message
+            : 'Error al subir el documento'
+        );
+      }
+    }
+
+    // Crear proyecto con documento_url si existe
+    const payloadProyecto: CreateProyectoDto = {
+      ...dto,
+      documento_url: documentoUrl,
+    };
+
+    return await proyectoApi.create(payloadProyecto);
+  } catch (err) {
+    console.error('[createProyecto] Error:', err);
+    throw err;
+  }
 }

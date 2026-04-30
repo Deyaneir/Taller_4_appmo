@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { proyectoSchema, type ProyectoFormValues } from '@shared/lib/validators/proyectoSchema';
-import React from 'react';
+import * as DocumentPicker from 'expo-document-picker';
+import React, { useState } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import {
     ActivityIndicator,
@@ -24,6 +25,7 @@ const FORM_INICIAL: ProyectoFormValues = {
   fecha_inicio: '',
   fecha_fin: '',
   repositorio_github: '',
+  documento_url: '',
   estado: 'En Progreso',
 };
 
@@ -74,6 +76,13 @@ function Campo({ control, name, label, placeholder, multiline = false, keyboardT
 }
 
 export function RegistroProyectoForm({ onSuccess }: Props) {
+  const [documentoSeleccionado, setDocumentoSeleccionado] = useState<{
+    name: string;
+    size: number;
+    type?: string;
+    uri: string;
+  } | null>(null);
+
   const {
     control,
     handleSubmit,
@@ -85,20 +94,44 @@ export function RegistroProyectoForm({ onSuccess }: Props) {
     defaultValues: FORM_INICIAL,
   });
 
+  const handleSeleccionarDocumento = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setDocumentoSeleccionado({
+          name: asset.name,
+          size: asset.size || 0,
+          type: asset.mimeType || 'application/pdf',
+          uri: asset.uri,
+        });
+      }
+    } catch (error) {
+      console.error('[RegistroProyectoForm] Error al seleccionar documento:', error);
+      Alert.alert('Error', 'No se pudo acceder al selector de archivos.');
+    }
+  };
+
   const handleGuardar = handleSubmit(async (values) => {
     try {
-      await createProyecto(values);
+      await createProyecto(values, documentoSeleccionado || undefined);
       Alert.alert('¡Éxito!', 'Proyecto de tesis registrado correctamente.', [
         {
           text: 'OK',
           onPress: () => {
             reset(FORM_INICIAL);
+            setDocumentoSeleccionado(null);
             onSuccess?.();
           },
         },
       ]);
-    } catch {
-      Alert.alert('Error', 'No se pudo guardar el proyecto. Verifica tu conexión.');
+    } catch (error) {
+      console.error('[RegistroProyectoForm] Error:', error);
+      const mensaje = error instanceof Error ? error.message : 'No se pudo guardar el proyecto.';
+      Alert.alert('Error', mensaje);
     }
   });
 
@@ -161,6 +194,21 @@ export function RegistroProyectoForm({ onSuccess }: Props) {
         placeholder="https://github.com/usuario/repositorio"
         keyboardType="url"
       />
+
+      <View style={styles.campoContenedor}>
+        <Text style={styles.etiqueta}>Documento PDF (Opcional)</Text>
+        <TouchableOpacity style={styles.botonSeleccionar} onPress={handleSeleccionarDocumento}>
+          <Text style={styles.botonSeleccionarTexto}>
+            {documentoSeleccionado ? '✓ ' : '📄 '}
+            {documentoSeleccionado ? documentoSeleccionado.name : 'Seleccionar PDF'}
+          </Text>
+        </TouchableOpacity>
+        {documentoSeleccionado && (
+          <Text style={styles.textoDocumento}>
+            Tamaño: {(documentoSeleccionado.size / 1024).toFixed(2)} KB
+          </Text>
+        )}
+      </View>
 
       <View style={styles.campoContenedor}>
         <Text style={styles.etiqueta}>Estado del Proyecto</Text>
@@ -230,6 +278,26 @@ const styles = StyleSheet.create({
   inputMultiline: { height: 80, textAlignVertical: 'top', paddingTop: 10 },
   inputError: { borderColor: '#E74C3C', borderWidth: 1.5 },
   textoError: { color: '#E74C3C', fontSize: 12, marginTop: 4 },
+  botonSeleccionar: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#DDE2E8',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botonSeleccionarTexto: {
+    fontSize: 14,
+    color: AZUL,
+    fontWeight: '600',
+  },
+  textoDocumento: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 6,
+  },
   estadoContenedor: { flexDirection: 'row', gap: 10 },
   estadoBoton: {
     flex: 1,

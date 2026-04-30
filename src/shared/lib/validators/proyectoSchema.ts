@@ -30,6 +30,7 @@ export const proyectoSchema = z
     }),
     fecha_fin: z.string().trim().optional().or(z.literal('')),
     repositorio_github: z.string().trim().optional().or(z.literal('')),
+    documento_url: z.string().trim().optional().or(z.literal('')),
     estado: z.enum(ESTADOS),
   })
   .superRefine((data, ctx) => {

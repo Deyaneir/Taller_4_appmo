@@ -56,7 +56,8 @@ export const proyectoApi = {
     const recordId = String(id ?? '').trim();
 
     // Cambiado: el payload se arma de forma explícita y se filtran undefined
-    // antes de enviarlo a Supabase.
+    // NOTA: null se incluye intencionalmente para eliminar campos (ej: documento_url)
+    // pero undefined se filtra para no actualizar ese campo
     const payload = Object.fromEntries(
       Object.entries({
         titulo: datos.titulo,
@@ -67,6 +68,7 @@ export const proyectoApi = {
         fecha_inicio: datos.fecha_inicio,
         fecha_fin: datos.fecha_fin?.trim() ? datos.fecha_fin : undefined,
         repositorio_github: datos.repositorio_github?.trim() ? datos.repositorio_github : undefined,
+        documento_url: datos.documento_url === null ? null : (datos.documento_url?.trim() ? datos.documento_url : undefined),
         estado: datos.estado,
       }).filter(([, value]) => value !== undefined)
     ) as UpdateProyectoDto;
@@ -107,9 +109,10 @@ export const proyectoApi = {
   async create(dto: CreateProyectoDto): Promise<ProyectoTesis> {
     const payload: CreateProyectoDto = { ...dto };
 
-    // Evita enviar strings vacios a columnas opcionales (ej. fecha/date).
+    // Evita enviar strings vacios a columnas opcionales
     if (!payload.fecha_fin?.trim()) delete payload.fecha_fin;
     if (!payload.repositorio_github?.trim()) delete payload.repositorio_github;
+    if (!payload.documento_url?.trim()) delete payload.documento_url;
 
     const { data, error } = await supabase
       .from(TABLE)

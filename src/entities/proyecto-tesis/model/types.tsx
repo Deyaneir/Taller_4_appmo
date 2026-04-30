@@ -10,6 +10,7 @@ export interface ProyectoTesis {
   fecha_inicio: string;          // Formato: "YYYY-MM-DD"
   fecha_fin?: string;            // Opcional: puede estar aún en progreso
   repositorio_github?: string;   // Ej: "https://github.com/usuario/repo"
+  documento_url?: string;        // Path del PDF en Supabase Storage
   estado: EstadoProyecto;
   created_at: string;
 }
