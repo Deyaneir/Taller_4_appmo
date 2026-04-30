@@ -1,38 +1,37 @@
 // app/_layout.tsx
 
-import { Redirect, Stack } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-
-import { useAuthSession } from "@features/auth/useAuthSession";
+import { useAuthSession } from '@features/auth/useAuthSession';
+import { Redirect, Slot, usePathname } from 'expo-router';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export default function RootLayout() {
   const { session, loading } = useAuthSession();
+  const pathname = usePathname();
 
   if (loading) {
     return (
-      <View style={styles.cargando}>
-        <ActivityIndicator />
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#1A3A5C" />
       </View>
     );
   }
 
-  if (!session) {
+  if (!session && pathname !== '/login') {
     return <Redirect href="/login" />;
   }
 
-  return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="+not-found" />
-    </Stack>
-  );
+  if (session && pathname === '/login') {
+    return <Redirect href="/(tabs)" />;
+  }
+
+  return <Slot />;
 }
 
 const styles = StyleSheet.create({
-  cargando: {
+  container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
 });

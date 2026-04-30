@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, StyleSheet, TextInput } from 'react-native';
+import {
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TextInput,
+    View
+} from 'react-native';
 
-import { supabase } from '@shared/api/supabase';
-import { Button } from '@shared/ui/Button';
-
-import { ThemedText } from '../../../../components/themed-text';
-import { ThemedView } from '../../../../components/themed-view';
+import { supabase } from '../../../shared/api/supabase';
+import { Button } from '../../../shared/ui/Button';
 
 const ERROR_COLOR = '#E74C3C';
 
@@ -31,49 +34,52 @@ export function LoginScreen() {
   };
 
   return (
-    <ThemedView style={styles.contenedor}>
-      <ThemedView style={styles.card}>
-        <ThemedText type="title" style={styles.titulo}>
-          Bienvenido
-        </ThemedText>
-        <ThemedText style={styles.subtitulo}>Inicia sesión para continuar</ThemedText>
+    <View style={styles.contenedor}>
+      <View style={styles.card}>
+        <Text style={styles.titulo}>Bienvenido</Text>
+        <Text style={styles.subtitulo}>Inicia sesión para continuar</Text>
 
-        <ThemedView style={styles.campoContenedor}>
-          <ThemedText style={styles.etiqueta}>Correo electrónico</ThemedText>
+        <View style={styles.campoContenedor}>
+          <Text style={styles.etiqueta}>Correo electrónico</Text>
           <TextInput
             style={styles.input}
             placeholder="correo@ejemplo.com"
+            placeholderTextColor="#999"
             autoCapitalize="none"
+            autoCorrect={false}
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
           />
-        </ThemedView>
+        </View>
 
-        <ThemedView style={styles.campoContenedor}>
-          <ThemedText style={styles.etiqueta}>Contraseña</ThemedText>
+        <View style={styles.campoContenedor}>
+          <Text style={styles.etiqueta}>Contraseña</Text>
           <TextInput
             style={styles.input}
             placeholder="••••••••"
+            placeholderTextColor="#999"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
-        </ThemedView>
+        </View>
 
-        {errorMessage ? <ThemedText style={styles.errorText}>{errorMessage}</ThemedText> : null}
+        {errorMessage ? (
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        ) : null}
 
-        <ThemedView style={styles.acciones}>
+        <View style={styles.acciones}>
           <Button onPress={handleLogin} disabled={loading}>
             {loading ? (
-              <ActivityIndicator />
+              <ActivityIndicator color="#fff" />
             ) : (
-              <ThemedText style={styles.botonTexto}>Iniciar sesión</ThemedText>
+              <Text style={styles.botonTexto}>Iniciar sesión</Text>
             )}
           </Button>
-        </ThemedView>
-      </ThemedView>
-    </ThemedView>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -81,47 +87,65 @@ const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
     justifyContent: 'center',
-    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+    paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: '#F5F7FA',
+    width: '100%',
+    backgroundColor: '#fff',
     padding: 24,
-    borderRadius: 16,
-    gap: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   titulo: {
+    fontSize: 28,
+    fontWeight: 'bold',
     textAlign: 'center',
+    marginBottom: 8,
+    color: '#003087',
   },
   subtitulo: {
+    fontSize: 14,
     textAlign: 'center',
+    marginBottom: 20,
+    color: '#666',
   },
   campoContenedor: {
-    gap: 6,
+    marginBottom: 16,
   },
   etiqueta: {
     fontSize: 13,
     fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
     borderWidth: 1,
-    borderColor: '#DDE2E8',
+    borderColor: '#DDD',
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
+    color: '#333',
   },
   acciones: {
-    marginTop: 6,
+    marginTop: 24,
   },
   botonTexto: {
     color: '#fff',
     fontWeight: '700',
-    textAlign: 'center',
+    fontSize: 16,
   },
   errorText: {
     color: ERROR_COLOR,
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
+    marginBottom: 8,
   },
 });
