@@ -3,7 +3,7 @@ import type { ProyectoTesis } from '@entities/proyecto-tesis/model/types';
 import { EditProjectForm } from '@features/project-edit/EditProjectForm';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 function normalizeId(id: string | string[] | undefined): string {
   return Array.isArray(id) ? id[0] ?? '' : id ?? '';
@@ -13,11 +13,6 @@ export default function EditProjectScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const router = useRouter();
   const id = normalizeId(params.id);
-
-  React.useEffect(() => {
-    // Cambiado: log para confirmar que el id de la ruta llega bien a la pantalla de edición.
-    console.log('[EditProjectScreen] id:', id);
-  }, [id]);
 
   const [proyecto, setProyecto] = useState<ProyectoTesis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +56,7 @@ export default function EditProjectScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.center}>
+      <View className="flex-1 justify-center items-center bg-gray-100">
         <ActivityIndicator size="large" color="#1A3A5C" />
       </View>
     );
@@ -69,16 +64,20 @@ export default function EditProjectScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Error al cargar el proyecto: {error}</Text>
+      <View className="flex-1 justify-center items-center px-5 bg-gray-100">
+        <View className="bg-red-50 p-4 rounded-xl w-full">
+          <Text className="text-[15px] text-center text-red-500">
+            Error al cargar el proyecto: {error}
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (!proyecto) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Proyecto no encontrado.</Text>
+      <View className="flex-1 justify-center items-center bg-gray-100">
+        <Text className="text-[15px] text-red-500">Proyecto no encontrado.</Text>
       </View>
     );
   }
@@ -87,24 +86,8 @@ export default function EditProjectScreen() {
     <EditProjectForm
       proyecto={proyecto}
       onSuccess={() => {
-        // Cambiado: al guardar con éxito regresa a la pantalla de detalle.
         router.back();
       }}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F7FA',
-    padding: 20,
-  },
-  error: {
-    color: '#E74C3C',
-    textAlign: 'center',
-    fontSize: 15,
-  },
-});

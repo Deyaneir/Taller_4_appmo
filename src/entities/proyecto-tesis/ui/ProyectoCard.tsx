@@ -1,105 +1,117 @@
 import type { ProyectoTesis } from '@entities/proyecto-tesis/model/types';
+import { useRouter } from 'expo-router';
 import React from 'react';
-import { Linking, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
- 
-const BADGE_COLOR: Record<string, string> = {
-  'En Progreso': '#3498DB',
-  'Completado': '#27AE60',
-  'Suspendido': '#E74C3C',
+import { Pressable, Text, View } from 'react-native';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+
+const ESTADO_CONFIG: Record<string, { bg: string; text: string }> = {
+  'En Progreso': { bg: '#3B82F6', text: '#FFFFFF' },
+  'Completado': { bg: '#10B981', text: '#FFFFFF' },
+  'Suspendido': { bg: '#EF4444', text: '#FFFFFF' },
 };
- 
+
 interface Props {
   proyecto: ProyectoTesis;
-  onPress?: () => void;
-  onEliminado?: () => void;
+  index?: number;
 }
- 
-export function ProyectoCard({ proyecto, onPress, onEliminado }: Props) {
-  const abrirRepo = () => {
-    if (proyecto.repositorio_github)
-      Linking.openURL(proyecto.repositorio_github);
-  };
- 
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.tarjeta, pressed && styles.tarjetaPressed]}
-      onPress={onPress}
-    >
-      <View style={styles.encabezado}>
-        <Text style={styles.titulo} numberOfLines={2}>{proyecto.titulo}</Text>
-        <View style={[styles.badge, { backgroundColor: BADGE_COLOR[proyecto.estado] }]}>
-          <Text style={styles.badgeTexto}>{proyecto.estado}</Text>
-        </View>
-      </View>
- 
-      <Text style={styles.etiqueta}>Autores</Text>
-      <Text style={styles.valor}>{proyecto.autores}</Text>
- 
-      <Text style={styles.etiqueta}>Tutor Docente</Text>
-      <Text style={styles.valor}>{proyecto.tutor_docente}</Text>
- 
-      <Text style={styles.etiqueta}>Tecnologias</Text>
-      <Text style={styles.valor}>{proyecto.tecnologias_utilizadas}</Text>
- 
-      <View style={styles.filaFechas}>
-        <View style={styles.fecha}>
-          <Text style={styles.etiqueta}>Inicio</Text>
-          <Text style={styles.valor}>{proyecto.fecha_inicio}</Text>
-        </View>
-        {proyecto.fecha_fin && (
-          <View style={styles.fecha}>
-            <Text style={styles.etiqueta}>Fin</Text>
-            <Text style={styles.valor}>{proyecto.fecha_fin}</Text>
-          </View>
-        )}
-      </View>
- 
-      {proyecto.repositorio_github && (
-        <TouchableOpacity style={styles.repoBoton} onPress={abrirRepo}>
-          <Text style={styles.repoTexto}>Ver en GitHub -&gt;</Text>
-        </TouchableOpacity>
-      )}
 
-      {onEliminado ? null : null}
-    </Pressable>
+function BotonAccion({ onPress, children, color = '#2563EB' }: { onPress?: () => void; children: React.ReactNode; color?: string }) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => {
+          scale.value = withSpring(0.95, { damping: 15, stiffness: 400 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+        }}
+        style={{ backgroundColor: color, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, flex: 1, alignItems: 'center' }}
+      >
+        <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>{children}</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
- 
-const styles = StyleSheet.create({
-  tarjeta: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  tarjetaPressed: {
-    opacity: 0.85,
-  },
-  encabezado: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  titulo: { fontSize: 16, fontWeight: '700', color: '#1A3A5C', flex: 1, marginRight: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  badgeTexto: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  etiqueta: { fontSize: 11, color: '#888', fontWeight: '600', marginTop: 8 },
-  valor: { fontSize: 14, color: '#333', marginTop: 2 },
-  filaFechas: { flexDirection: 'row', gap: 24 },
-  fecha: { flex: 1 },
-  repoBoton: {
-    marginTop: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#EBF5FB',
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  repoTexto: { color: '#2E6DA4', fontSize: 13, fontWeight: '600' },
-});
+
+export function ProyectoCard({ proyecto, index = 0 }: Props) {
+  const router = useRouter();
+  const estadoConfig = ESTADO_CONFIG[proyecto.estado] || ESTADO_CONFIG['En Progreso'];
+  const cardScale = useSharedValue(1);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cardScale.value }],
+  }));
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 80).duration(400).springify()} style={cardAnimatedStyle}>
+      <Pressable
+        onPress={() => router.push(`/proyecto/${proyecto.id}`)}
+        onPressIn={() => {
+          cardScale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
+        }}
+        onPressOut={() => {
+          cardScale.value = withSpring(1, { damping: 15, stiffness: 400 });
+        }}
+      >
+        <View style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 16,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A3A5C', flex: 1, marginRight: 8 }} numberOfLines={2}>
+              {proyecto.titulo}
+            </Text>
+            <View style={{ backgroundColor: estadoConfig.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start' }}>
+              <Text style={{ color: estadoConfig.text, fontSize: 12, fontWeight: '600' }}>{proyecto.estado}</Text>
+            </View>
+          </View>
+
+          <View style={{ marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280' }}>Autor:</Text>
+            <Text style={{ fontSize: 14, color: '#374151' }}>{proyecto.autores}</Text>
+          </View>
+
+          <View style={{ marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280' }}>Tutor:</Text>
+            <Text style={{ fontSize: 14, color: '#374151' }}>{proyecto.tutor_docente}</Text>
+          </View>
+
+          <View style={{ marginBottom: 12 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280' }}>Fechas:</Text>
+            <Text style={{ fontSize: 14, color: '#374151' }}>
+              {proyecto.fecha_inicio}{proyecto.fecha_fin ? ` - ${proyecto.fecha_fin}` : ''}
+            </Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <BotonAccion onPress={() => router.push(`/proyecto/${proyecto.id}/edit`)} color="#2563EB">
+              Editar
+            </BotonAccion>
+            <BotonAccion onPress={() => {}} color="#EF4444">
+              Eliminar
+            </BotonAccion>
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}

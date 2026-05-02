@@ -18,13 +18,35 @@ function isValidHttpUrl(value: string): boolean {
   }
 }
 
+function noContieneNumeros(value: string): boolean {
+  return !/\d/.test(value);
+}
+
 export const proyectoSchema = z
   .object({
-    titulo: z.string().trim().min(3, 'El título debe tener al menos 3 caracteres'),
-    descripcion: z.string().trim().min(10, 'La descripción debe tener al menos 10 caracteres'),
-    autores: z.string().trim().min(1, 'Los autores son obligatorios'),
-    tutor_docente: z.string().trim().min(1, 'El tutor docente es obligatorio'),
-    tecnologias_utilizadas: z.string().trim().min(1, 'Las tecnologías utilizadas son obligatorias'),
+    titulo: z
+      .string()
+      .trim()
+      .min(3, 'El titulo debe tener al menos 3 caracteres')
+      .refine(noContieneNumeros, {
+        message: 'El titulo no puede contener numeros',
+      }),
+    descripcion: z.string().trim().min(10, 'La descripcion debe tener al menos 10 caracteres'),
+    autores: z
+      .string()
+      .trim()
+      .min(1, 'Los autores son obligatorios')
+      .refine(noContieneNumeros, {
+        message: 'Los autores no pueden contener numeros',
+      }),
+    tutor_docente: z
+      .string()
+      .trim()
+      .min(1, 'El tutor docente es obligatorio')
+      .refine(noContieneNumeros, {
+        message: 'El nombre del tutor no puede contener numeros',
+      }),
+    tecnologias_utilizadas: z.string().trim().min(1, 'Las tecnologias utilizadas son obligatorias'),
     fecha_inicio: z.string().trim().min(1, 'La fecha de inicio es obligatoria').refine(isValidIsoDate, {
       message: 'La fecha de inicio debe tener formato AAAA-MM-DD',
     }),
@@ -55,7 +77,7 @@ export const proyectoSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['repositorio_github'],
-        message: 'El repositorio debe ser una URL válida',
+        message: 'El repositorio debe ser una URL valida (https://...)',
       });
     }
   });

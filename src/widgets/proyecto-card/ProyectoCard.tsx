@@ -1,7 +1,7 @@
 import type { ProyectoTesis } from '@entities/proyecto-tesis/model/types';
 import { useEliminarProyecto } from '@features/eliminar-proyecto/useEliminarProyecto';
 import React from 'react';
-import { ActivityIndicator, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, Text, TouchableOpacity, View } from 'react-native';
  
 const BADGE_COLOR: Record<string, string> = {
   'En Progreso': '#3498DB',
@@ -23,101 +23,54 @@ export function ProyectoCard({ proyecto, onEliminado }: Props) {
   };
  
   return (
-    <View style={styles.tarjeta}>
-      {/* Encabezado: título + badge de estado */}
-      <View style={styles.encabezado}>
-        <Text style={styles.titulo} numberOfLines={2}>{proyecto.titulo}</Text>
-        <View style={[styles.badge, { backgroundColor: BADGE_COLOR[proyecto.estado] }]}>
-          <Text style={styles.badgeTexto}>{proyecto.estado}</Text>
+    <View className="bg-white rounded-xl p-4 mb-3 shadow-md">
+      <View className="flex-row justify-between items-start mb-3">
+        <Text className="text-base font-bold text-blue-900 flex-1 mr-2" numberOfLines={2}>{proyecto.titulo}</Text>
+        <View className="px-2 py-1 rounded-lg" style={{ backgroundColor: BADGE_COLOR[proyecto.estado] }}>
+          <Text className="text-white text-[11px] font-bold">{proyecto.estado}</Text>
         </View>
       </View>
  
-      {/* Autores */}
-      <Text style={styles.etiqueta}>Autores</Text>
-      <Text style={styles.valor}>{proyecto.autores}</Text>
+      <Text className="text-[11px] text-gray-400 font-semibold mt-2">Autores</Text>
+      <Text className="text-sm text-gray-700 mt-0.5">{proyecto.autores}</Text>
  
-      {/* Tutor */}
-      <Text style={styles.etiqueta}>Tutor Docente</Text>
-      <Text style={styles.valor}>{proyecto.tutor_docente}</Text>
+      <Text className="text-[11px] text-gray-400 font-semibold mt-2">Tutor Docente</Text>
+      <Text className="text-sm text-gray-700 mt-0.5">{proyecto.tutor_docente}</Text>
  
-      {/* Tecnologías */}
-      <Text style={styles.etiqueta}>Tecnologías</Text>
-      <Text style={styles.valor}>{proyecto.tecnologias_utilizadas}</Text>
+      <Text className="text-[11px] text-gray-400 font-semibold mt-2">Tecnologías</Text>
+      <Text className="text-sm text-gray-700 mt-0.5">{proyecto.tecnologias_utilizadas}</Text>
  
-      {/* Fechas */}
-      <View style={styles.filaFechas}>
-        <View style={styles.fecha}>
-          <Text style={styles.etiqueta}>Inicio</Text>
-          <Text style={styles.valor}>{proyecto.fecha_inicio}</Text>
+      <View className="flex-row gap-6 mt-2">
+        <View className="flex-1">
+          <Text className="text-[11px] text-gray-400 font-semibold">Inicio</Text>
+          <Text className="text-sm text-gray-700 mt-0.5">{proyecto.fecha_inicio}</Text>
         </View>
         {proyecto.fecha_fin && (
-          <View style={styles.fecha}>
-            <Text style={styles.etiqueta}>Fin</Text>
-            <Text style={styles.valor}>{proyecto.fecha_fin}</Text>
+          <View className="flex-1">
+            <Text className="text-[11px] text-gray-400 font-semibold">Fin</Text>
+            <Text className="text-sm text-gray-700 mt-0.5">{proyecto.fecha_fin}</Text>
           </View>
         )}
       </View>
  
-      {/* Link a GitHub */}
       {proyecto.repositorio_github && (
-        <TouchableOpacity style={styles.repoBoton} onPress={abrirRepo}>
-          <Text style={styles.repoTexto}>Ver en GitHub →</Text>
+        <TouchableOpacity className="mt-3 py-2 px-3 bg-blue-50 rounded-lg self-start" onPress={abrirRepo}>
+          <Text className="text-blue-500 text-[13px] font-semibold">Ver en GitHub →</Text>
         </TouchableOpacity>
       )}
 
       <TouchableOpacity
-        style={[styles.eliminarBoton, isLoading && styles.eliminarBotonDeshabilitado]}
+        className={`mt-3 py-2.5 px-3 rounded-lg self-start ${isLoading ? 'opacity-70' : ''}`}
+        style={{ backgroundColor: '#E74C3C' }}
         onPress={onEliminar}
         disabled={isLoading}
       >
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.eliminarTexto}>Eliminar</Text>
+          <Text className="text-white text-[13px] font-bold">Eliminar</Text>
         )}
       </TouchableOpacity>
     </View>
   );
 }
- 
-const styles = StyleSheet.create({
-  tarjeta: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  encabezado: { flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'flex-start', marginBottom: 12 },
-  titulo: { fontSize: 16, fontWeight: '700', color: '#1A3A5C', flex: 1, marginRight: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  badgeTexto: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  etiqueta: { fontSize: 11, color: '#888', fontWeight: '600', marginTop: 8 },
-  valor: { fontSize: 14, color: '#333', marginTop: 2 },
-  filaFechas: { flexDirection: 'row', gap: 24 },
-  fecha: { flex: 1 },
-  repoBoton: { marginTop: 12, paddingVertical: 8, paddingHorizontal: 12,
-    backgroundColor: '#EBF5FB', borderRadius: 8, alignSelf: 'flex-start' },
-  repoTexto: { color: '#2E6DA4', fontSize: 13, fontWeight: '600' },
-  eliminarBoton: {
-    marginTop: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#E74C3C',
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  eliminarBotonDeshabilitado: {
-    opacity: 0.7,
-  },
-  eliminarTexto: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});

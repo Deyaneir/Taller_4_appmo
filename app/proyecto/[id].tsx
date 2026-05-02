@@ -4,10 +4,35 @@ import { useEliminarProyecto } from '@features/eliminar-proyecto/useEliminarProy
 import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
+const ESTADO_COLORS: Record<string, { bg: string; text: string }> = {
+  'En Progreso': { bg: '#EBF5FB', text: '#2E6DA4' },
+  'Completado': { bg: '#E8F8F0', text: '#27AE60' },
+  'Suspendido': { bg: '#FEF2F2', text: '#E74C3C' },
+};
 
 function normalizeId(id: string | string[] | undefined): string {
   return Array.isArray(id) ? id[0] ?? '' : id ?? '';
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <Text style={{ fontSize: 12, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1 }}>
+      {children}
+    </Text>
+  );
+}
+
+function Value({ children }: { children: React.ReactNode }) {
+  return (
+    <Text style={{ fontSize: 15, marginTop: 4, color: '#374151', lineHeight: 22 }}>
+      {children}
+    </Text>
+  );
 }
 
 export default function ProyectoDetalleScreen() {
@@ -16,7 +41,6 @@ export default function ProyectoDetalleScreen() {
   const isFocused = useIsFocused();
   const id = normalizeId(params.id);
   const { onEliminar, isLoading: eliminando } = useEliminarProyecto(id, () => {
-    // Cambiado: al eliminar se regresa a la lista para mostrar el refresh.
     router.back();
   });
 
@@ -24,10 +48,15 @@ export default function ProyectoDetalleScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Hooks de animación al inicio
+  const editScale = useSharedValue(1);
+  const deleteScale = useSharedValue(1);
+  const editAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: editScale.value }] }));
+  const deleteAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: deleteScale.value }] }));
+
   useEffect(() => {
-    // Cambiado: recarga el proyecto cada vez que la pantalla vuelve a tener foco.
     if (!id) {
-      setError('ID de proyecto inválido.');
+      setError('ID de proyecto invalido.');
       setIsLoading(false);
       return;
     }
@@ -61,7 +90,7 @@ export default function ProyectoDetalleScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F7FA' }}>
         <ActivityIndicator size="large" color="#1A3A5C" />
       </View>
     );
@@ -69,208 +98,138 @@ export default function ProyectoDetalleScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Error al cargar el proyecto: {error}</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, backgroundColor: '#F5F7FA' }}>
+        <View style={{ backgroundColor: '#FEF2F2', padding: 16, borderRadius: 12, width: '100%' }}>
+          <Text style={{ fontSize: 15, textAlign: 'center', color: '#E74C3C' }}>
+            Error al cargar el proyecto: {error}
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (!proyecto) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Proyecto no encontrado.</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F7FA' }}>
+        <Text style={{ fontSize: 15, color: '#E74C3C' }}>Proyecto no encontrado.</Text>
       </View>
     );
   }
 
+  const estadoColors = ESTADO_COLORS[proyecto.estado] || ESTADO_COLORS['En Progreso'];
+
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Volver</Text>
-      </TouchableOpacity>
-
-      <View style={styles.actionsRow}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
+      <View style={{ paddingHorizontal: 25, paddingTop: 25, paddingBottom: 25 }}>
         <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push(`/proyecto/${id}/edit`)}
+          style={{ alignSelf: 'flex-start', marginBottom: 12, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#EBF5FB', borderRadius: 8 }}
+          onPress={() => router.back()}
         >
-          {/* Cambiado: botón para abrir la edición del proyecto. */}
-          <Text style={styles.editText}>Editar</Text>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#2E6DA4' }}>Volver</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.deleteButton, eliminando && styles.deleteButtonDisabled]}
-          onPress={onEliminar}
-          disabled={eliminando}
-        >
-          {eliminando ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.deleteText}>Eliminar</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+          <AnimatedTouchable
+            style={[{ flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center', backgroundColor: '#1A3A5C' }, editAnimatedStyle]}
+            onPress={() => router.push(`/proyecto/${id}/edit`)}
+            onPressIn={() => { editScale.value = withSpring(0.95, { damping: 15, stiffness: 400 }); }}
+            onPressOut={() => { editScale.value = withSpring(1, { damping: 15, stiffness: 400 }); }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Editar</Text>
+          </AnimatedTouchable>
 
-      <View style={styles.card}>
-        <Text style={styles.title}>{proyecto.titulo}</Text>
-        <Text style={styles.badge}>{proyecto.estado}</Text>
-
-        <Text style={styles.label}>Descripción</Text>
-        <Text style={styles.value}>{proyecto.descripcion}</Text>
-
-        <Text style={styles.label}>Autores</Text>
-        <Text style={styles.value}>{proyecto.autores}</Text>
-
-        <Text style={styles.label}>Tutor Docente</Text>
-        <Text style={styles.value}>{proyecto.tutor_docente}</Text>
-
-        <Text style={styles.label}>Tecnologías Utilizadas</Text>
-        <Text style={styles.value}>{proyecto.tecnologias_utilizadas}</Text>
-
-        <View style={styles.row}>
-          <View style={styles.col}>
-            <Text style={styles.label}>Fecha Inicio</Text>
-            <Text style={styles.value}>{proyecto.fecha_inicio}</Text>
-          </View>
-          {proyecto.fecha_fin ? (
-            <View style={styles.col}>
-              <Text style={styles.label}>Fecha Fin</Text>
-              <Text style={styles.value}>{proyecto.fecha_fin}</Text>
-            </View>
-          ) : null}
+          <AnimatedTouchable
+            style={[{ flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center', backgroundColor: '#E74C3C', opacity: eliminando ? 0.7 : 1 }, deleteAnimatedStyle]}
+            onPress={onEliminar}
+            disabled={eliminando}
+            onPressIn={() => { if (!eliminando) deleteScale.value = withSpring(0.95, { damping: 15, stiffness: 400 }); }}
+            onPressOut={() => { if (!eliminando) deleteScale.value = withSpring(1, { damping: 15, stiffness: 400 }); }}
+          >
+            {eliminando ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Eliminar</Text>
+            )}
+          </AnimatedTouchable>
         </View>
 
-        {proyecto.repositorio_github ? (
-          <TouchableOpacity
-            style={styles.repoButton}
-            onPress={() => Linking.openURL(proyecto.repositorio_github ?? '')}
-          >
-            <Text style={styles.repoText}>Abrir repositorio</Text>
-          </TouchableOpacity>
-        ) : null}
+        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <Text style={{ fontSize: 22, fontWeight: '700', color: '#1A3A5C', flex: 1, marginRight: 12 }}>
+              {proyecto.titulo}
+            </Text>
+            <View style={{ backgroundColor: estadoColors.bg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: estadoColors.text }}>{proyecto.estado}</Text>
+            </View>
+          </View>
+
+          <View style={{ height: 8 }} />
+
+          <Label>Descripcion</Label>
+          <Value>{proyecto.descripcion}</Value>
+
+          <View style={{ height: 12 }} />
+
+          <View style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16 }}>
+            <View style={{ flexDirection: 'row' }}>
+              <View style={{ flex: 1 }}>
+                <Label>Autores</Label>
+                <Value>{proyecto.autores}</Value>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Label>Tutor</Label>
+                <Value>{proyecto.tutor_docente}</Value>
+              </View>
+            </View>
+          </View>
+
+          <View style={{ height: 12 }} />
+
+          <Label>Tecnologias</Label>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+            {proyecto.tecnologias_utilizadas.split(',').map((tech, i) => (
+              <View key={i} style={{ backgroundColor: '#EBF5FB', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginRight: 6, marginBottom: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: '#2E6DA4' }}>
+                  {tech.trim()}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={{ height: 12 }} />
+
+          <View style={{ flexDirection: 'row' }}>
+            <View style={{ flex: 1 }}>
+              <Label>Fecha inicio</Label>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1A3A5C', marginRight: 8 }} />
+                <Value>{proyecto.fecha_inicio}</Value>
+              </View>
+            </View>
+            {proyecto.fecha_fin && (
+              <View style={{ flex: 1 }}>
+                <Label>Fecha fin</Label>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#E74C3C', marginRight: 8 }} />
+                  <Value>{proyecto.fecha_fin}</Value>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {proyecto.repositorio_github && (
+            <>
+              <View style={{ height: 16 }} />
+              <TouchableOpacity
+                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', backgroundColor: '#1A3A5C' }}
+                onPress={() => Linking.openURL(proyecto.repositorio_github ?? '')}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Ver Repositorio</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    backgroundColor: '#F5F7FA',
-    flexGrow: 1,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: '#EBF5FB',
-  },
-  backText: {
-    color: '#2E6DA4',
-    fontWeight: '700',
-  },
-  editButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: '#1A3A5C',
-  },
-  editText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  deleteButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: '#E74C3C',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  deleteButtonDisabled: {
-    opacity: 0.7,
-  },
-  deleteText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F7FA',
-    padding: 20,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1A3A5C',
-    marginBottom: 8,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#2E6DA4',
-    color: '#fff',
-    borderRadius: 999,
-    overflow: 'hidden',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6B7280',
-    marginTop: 12,
-  },
-  value: {
-    fontSize: 15,
-    color: '#1F2937',
-    marginTop: 4,
-    lineHeight: 22,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 8,
-  },
-  col: {
-    flex: 1,
-  },
-  repoButton: {
-    marginTop: 18,
-    backgroundColor: '#EBF5FB',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    alignSelf: 'flex-start',
-  },
-  repoText: {
-    color: '#2E6DA4',
-    fontWeight: '700',
-  },
-  error: {
-    color: '#E74C3C',
-    textAlign: 'center',
-    fontSize: 15,
-  },
-});

@@ -1,0 +1,10 @@
+/* Uniwind styles */
+@import 'uniwind';
+
+@theme {
+  --color-primary: #1A3A5C;
+  --color-secondary: #2E6DA4;
+  --color-error: #E74C3C;
+  --color-background: #F5F7FA;
+  --color-card: #FFFFFF;
+}
