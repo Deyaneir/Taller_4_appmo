@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { proyectoSchema, type ProyectoFormValues } from '@shared/lib/validators/proyectoSchema';
 import * as DocumentPicker from 'expo-document-picker';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import {
     ActivityIndicator,
@@ -13,7 +14,6 @@ import {
     TextInput,
     View,
 } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
@@ -73,6 +73,7 @@ function CampoInput({
       render={({ field, fieldState }) => (
         <View style={{ marginBottom: 16 }}>
           <Text style={{ fontSize: 12, fontWeight: '700', marginBottom: 6, color: '#6B7280', textTransform: 'uppercase' }}>{label}</Text>
+          {/* Transición de borde con Reanimated: resalta el campo en foco y en error. */}
           <Animated.View style={{ backgroundColor: '#F9FAFB', borderRadius: 12, overflow: 'hidden', ...animatedBorderStyle }}>
             <TextInput
               style={{
@@ -306,6 +307,7 @@ export function RegistroProyectoForm({ onSuccess }: Props) {
 
           <View style={{ marginBottom: 16 }}>
             <Text style={{ fontSize: 12, fontWeight: '700', marginBottom: 6, color: '#6B7280', textTransform: 'uppercase' }}>Documento PDF (Opcional)</Text>
+            {/* Campo documento: selecciona un PDF para persistirlo en Supabase Storage. */}
             <Pressable
               onPress={handleSeleccionarDocumento}
               style={{ 

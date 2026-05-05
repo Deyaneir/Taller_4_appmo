@@ -63,7 +63,7 @@ export async function createProyecto(
   try {
     let documentoUrl: string | undefined;
 
-    // Si hay documento, subirlo primero
+    // Subida a Supabase Storage: el PDF se persiste antes de guardar el registro.
     if (documentoFile) {
       try {
         const uploadResult = await uploadDocumentoProyecto(documentoFile);
@@ -78,7 +78,7 @@ export async function createProyecto(
       }
     }
 
-    // Crear proyecto con documento_url si existe
+    // El URL del archivo queda asociado al proyecto en documento_url.
     const payloadProyecto: CreateProyectoDto = {
       ...dto,
       documento_url: documentoUrl,

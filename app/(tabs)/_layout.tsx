@@ -1,8 +1,8 @@
 // app/(tabs)/_layout.tsx
-import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity, Text, View } from 'react-native';
 import { supabase } from '@shared/api/supabase';
+import { Tabs } from 'expo-router';
+import { Text, TouchableOpacity } from 'react-native';
   
 export default function TabLayout() {
   const handleLogout = async () => {

@@ -35,6 +35,16 @@ function Value({ children }: { children: React.ReactNode }) {
   );
 }
 
+function getFileNameFromUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname;
+    return pathname.split('/').pop() || 'Documento';
+  } catch {
+    return url.split('/').pop() || 'Documento';
+  }
+}
+
 export default function ProyectoDetalleScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const router = useRouter();
@@ -229,6 +239,30 @@ export default function ProyectoDetalleScreen() {
             </>
           )}
         </View>
+        {proyecto.documento_url && (
+          <View style={{ marginTop: 16, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
+            <Label>Documento PDF</Label>
+            <TouchableOpacity
+              style={{
+                marginTop: 8,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                borderRadius: 12,
+                backgroundColor: '#F9FAFB',
+                borderWidth: 1,
+                borderColor: '#DDE2E8',
+              }}
+              onPress={() => Linking.openURL(proyecto.documento_url ?? '')}
+            >
+              <Text style={{ fontSize: 15, color: '#1A3A5C', fontWeight: '700' }}>
+                {getFileNameFromUrl(proyecto.documento_url)}
+              </Text>
+              <Text style={{ fontSize: 13, marginTop: 4, color: '#6B7280' }}>
+                Toca para abrir el PDF
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </ScrollView>
   );

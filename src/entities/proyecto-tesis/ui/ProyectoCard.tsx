@@ -18,34 +18,10 @@ const ESTADO_CONFIG: Record<string, { bg: string; text: string }> = {
 interface Props {
   proyecto: ProyectoTesis;
   index?: number;
+  onPress?: () => void;
 }
 
-function BotonAccion({ onPress, children, color = '#2563EB' }: { onPress?: () => void; children: React.ReactNode; color?: string }) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={() => {
-          scale.value = withSpring(0.95, { damping: 15, stiffness: 400 });
-        }}
-        onPressOut={() => {
-          scale.value = withSpring(1, { damping: 15, stiffness: 400 });
-        }}
-        style={{ backgroundColor: color, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, flex: 1, alignItems: 'center' }}
-      >
-        <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>{children}</Text>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-export function ProyectoCard({ proyecto, index = 0 }: Props) {
+export function ProyectoCard({ proyecto, index = 0, onPress }: Props) {
   const router = useRouter();
   const estadoConfig = ESTADO_CONFIG[proyecto.estado] || ESTADO_CONFIG['En Progreso'];
   const cardScale = useSharedValue(1);
@@ -55,9 +31,10 @@ export function ProyectoCard({ proyecto, index = 0 }: Props) {
   }));
 
   return (
+    // Animación de entrada: cada tarjeta aparece con desplazamiento y retraso progresivo.
     <Animated.View entering={FadeInDown.delay(index * 80).duration(400).springify()} style={cardAnimatedStyle}>
       <Pressable
-        onPress={() => router.push(`/proyecto/${proyecto.id}`)}
+        onPress={onPress ?? (() => router.push(`/proyecto/${proyecto.id}`))}
         onPressIn={() => {
           cardScale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
         }}
@@ -100,15 +77,6 @@ export function ProyectoCard({ proyecto, index = 0 }: Props) {
             <Text style={{ fontSize: 14, color: '#374151' }}>
               {proyecto.fecha_inicio}{proyecto.fecha_fin ? ` - ${proyecto.fecha_fin}` : ''}
             </Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <BotonAccion onPress={() => router.push(`/proyecto/${proyecto.id}/edit`)} color="#2563EB">
-              Editar
-            </BotonAccion>
-            <BotonAccion onPress={() => {}} color="#EF4444">
-              Eliminar
-            </BotonAccion>
           </View>
         </View>
       </Pressable>

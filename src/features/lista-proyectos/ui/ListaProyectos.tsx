@@ -1,8 +1,7 @@
 import { proyectoApi } from "@entities/proyecto-tesis/api/proyectoApi";
 import type { ProyectoTesis } from "@entities/proyecto-tesis/model/types";
-import { useRouter } from "expo-router";
-import { useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -14,12 +13,10 @@ const ESTADO_CONFIG: Record<string, { bg: string; text: string }> = {
 
 function TarjetaProyecto({ 
   proyecto, 
-  index,
-  onEliminar 
+  index
 }: { 
   proyecto: ProyectoTesis; 
   index: number;
-  onEliminar: () => void;
 }) {
   const router = useRouter();
   const estadoConfig = ESTADO_CONFIG[proyecto.estado] || ESTADO_CONFIG['En Progreso'];
@@ -66,21 +63,6 @@ function TarjetaProyecto({
             <Text style={{ fontSize: 14, color: '#374151' }}>
               {proyecto.fecha_inicio}{proyecto.fecha_fin ? ` - ${proyecto.fecha_fin}` : ''}
             </Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pressable
-              onPress={() => router.push(`/proyecto/${proyecto.id}/edit`)}
-              style={{ backgroundColor: '#2563EB', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, flex: 1, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Editar</Text>
-            </Pressable>
-            <Pressable
-              onPress={onEliminar}
-              style={{ backgroundColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, flex: 1, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Eliminar</Text>
-            </Pressable>
           </View>
         </Pressable>
       </View>
@@ -166,7 +148,6 @@ export function ListaProyectos() {
           key={proyecto.id}
           proyecto={proyecto}
           index={index}
-          onEliminar={() => cargarProyectos(true)}
         />
       ))}
     </View>

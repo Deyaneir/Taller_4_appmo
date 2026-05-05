@@ -17,10 +17,12 @@ export default function RootLayout() {
     );
   }
 
+  // Guardia de navegación: sin sesión solo se permite ver la pantalla de login.
   if (!session && pathname !== '/login') {
     return <Redirect href="/login" />;
   }
 
+  // Si ya inició sesión, el acceso vuelve al área protegida de la app.
   if (session && pathname === '/login') {
     return <Redirect href="/(tabs)" />;
   }
